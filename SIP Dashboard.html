@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIP Mentor Live Dashboard | MBA 2025-27</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .table-auto tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .table-auto tbody tr:hover { background-color: #e0f2fe; transition: background-color 0.2s; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="mb-8 fade-in">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900">SIP Mentor Live Dashboard</h1>
+            <p class="text-slate-500 mt-2">MBA 2025-27 | Weekly Progress & Submission Tracker</p>
+        </header>
+
+        <!-- Data Source Input -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8 fade-in">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Upload Google Sheet CSV Data</label>
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <input type="file" id="csvFileInput" accept=".csv" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-blue-700 file:bg-blue-50 hover:file:bg-blue-100 cursor-pointer w-full md:w-auto">
+                <p class="text-xs text-slate-400 text-center md:text-left">Download CSV from Google Sheet (File &gt; Download &gt; .csv) and select it here.</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <label for="mentorFilter" class="block text-xs font-bold uppercase text-slate-500 mb-2">Filter by Mentor</label>
+                <select id="mentorFilter" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="all">All Mentors</option>
+                </select>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <label for="weekFilter" class="block text-xs font-bold uppercase text-slate-500 mb-2">Select Week</label>
+                <select id="weekFilter" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="">Upload data to load weeks</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Mentor Performance Matrix -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                    Best 5 Mentors (Fewest Missing Details)
+                </h3>
+                <div id="bestMentors" class="space-y-2 text-sm text-slate-700">
+                    <p class="text-slate-400 text-xs italic">Upload data to see rankings.</p>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-lg font-bold text-rose-500 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    Worst 5 Mentors (Most Missing Details)
+                </h3>
+                <div id="worstMentors" class="space-y-2 text-sm text-slate-700">
+                    <p class="text-slate-400 text-xs italic">Upload data to see rankings.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-blue-600 text-white p-4 rounded-xl shadow-lg">
+                <p class="text-blue-100 text-sm font-medium">Total Students</p>
+                <p id="statTotal" class="text-3xl font-bold mt-1">0</p>
+            </div>
+            <div class="bg-emerald-500 text-white p-4 rounded-xl shadow-lg">
+                <p class="text-emerald-100 text-sm font-medium">Attended Meeting (3 Marks)</p>
+                <p id="statAttended" class="text-3xl font-bold mt-1">0%</p>
+            </div>
+            <div class="bg-amber-500 text-white p-4 rounded-xl shadow-lg">
+                <p class="text-amber-100 text-sm font-medium">Missing Report Links</p>
+                <p id="statMissingReport" class="text-3xl font-bold mt-1">0</p>
+            </div>
+            <div class="bg-rose-500 text-white p-4 rounded-xl shadow-lg">
+                <p class="text-rose-100 text-sm font-medium">Missing Recording Links</p>
+                <p id="statMissingRec" class="text-3xl font-bold mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Table -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden overflow-x-auto">
+            <table class="table-auto w-full text-sm text-left border-collapse">
+                <thead class="bg-slate-800 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-4">Student Name</th>
+                        <th class="px-4 py-4">Company</th>
+                        <th class="px-4 py-4 text-center">Attended<br>Meeting<br>(3 Marks)</th>
+                        <th class="px-4 py-4 text-center">WPR<br>(2 Marks)</th>
+                        <th class="px-4 py-4 text-center">Submission<br>Format<br>(1 Mark)</th>
+                        <th class="px-4 py-4 text-center">Weekly Report Link</th>
+                        <th class="px-4 py-4 text-center">Weekly Recording Link</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboardBody" class="divide-y divide-slate-200">
+                    <tr>
+                        <td colspan="7" class="text-center py-10 text-slate-400 font-medium">
+                            Upload a CSV file to load dashboard data.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let COL_MAP = {};
+        let rawData = [];
+
+        const showError = (message) => {
+            const tbody = document.getElementById("dashboardBody");
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-rose-500 font-medium">${message}</td></tr>`;
+        };
+
+        // Helper to safely extract numbers from messy CSV strings
+        const safeInt = (val) => {
+            if (!val) return 0;
+            const str = val.trim();
+            if (str === "*" || str === "") return 0;
+            const num = parseInt(str);
+            return isNaN(num) ? 0 : num;
+        };
+
+        // Helper to clean link strings
+        const cleanStr = (val) => {
+            if (!val) return "";
+            const str = val.trim();
+            if (str === "*") return "";
+            return str;
+        };
+
+        // --- CSV File Upload ---
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById("dashboardBody").innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-400 font-medium">Reading uploaded file...</td></tr>`;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    parseCSV(e.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function parseCSV(csvString) {
+            Papa.parse(csvString, {
+                skipEmptyLines: true,
+                complete: function(results) {
+                    let headerRowIndex = -1;
+                    for(let i = 0; i < Math.min(50, results.data.length); i++) {
+                        const rowUpper = results.data[i].map(h => h ? h.toString().toUpperCase() : "");
+                        if(rowUpper.includes("STUDENT NAME") && rowUpper.includes("SIP MENTOR")) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (headerRowIndex === -1) {
+                        showError("Error: Could not find 'STUDENT NAME' and 'SIP Mentor' in the sheet headers.");
+                        return;
+                    }
+
+                    const headers = results.data[headerRowIndex];
+                    const findCol = (name) => headers.findIndex(h => h && h.toString().toUpperCase().trim() === name.toUpperCase());
+                    
+                    const colStudentName = findCol("STUDENT NAME");
+                    const colSipMentor = findCol("SIP Mentor");
+                    const colCompany = findCol("Company");
+
+                    const weekMaps = {};
+                    const reportLinkRegex = /Weekly report[-\s]?(\d+).*link/i;
+                    
+                    headers.forEach((h, i) => {
+                        if (h) {
+                            let match = h.toString().match(reportLinkRegex);
+                            if (match) {
+                                let weekNum = parseInt(match[1]);
+                                weekMaps[weekNum] = {
+                                    ATTENDED: i - 4,
+                                    WPR: i - 3,
+                                    SUBMISSION: i - 2,
+                                    RESCHED: i - 1,
+                                    REPORT_LINK: i,
+                                    REC_LINK: i + 1
+                                };
+                            }
+                        }
+                    });
+
+                    if (Object.keys(weekMaps).length === 0) {
+                        showError("Error: Could not find 'Weekly report-X link' columns in the sheet.");
+                        return;
+                    }
+
+                    COL_MAP = {
+                        STUDENT_NAME: colStudentName,
+                        SIP_MENTOR: colSipMentor,
+                        COMPANY: colCompany,
+                        WEEKS: weekMaps
+                    };
+
+                    rawData = results.data.slice(headerRowIndex + 1).filter(row => 
+                        row[COL_MAP.STUDENT_NAME] && 
+                        row[COL_MAP.STUDENT_NAME].trim() !== "" &&
+                        row[COL_MAP.STUDENT_NAME].toUpperCase() !== "STUDENT NAME"
+                    );
+                    
+                    if(rawData.length === 0) {
+                        showError("Data parsed successfully, but no student records were found.");
+                        return;
+                    }
+
+                    populateDropdowns();
+                    renderDashboard();
+                }
+            });
+        }
+
+        function populateDropdowns() {
+            // Populate Mentors
+            const mentors = [...new Set(rawData.map(row => row[COL_MAP.SIP_MENTOR]).filter(m => m && m.trim() !== "*" && m.trim() !== ""))].sort();
+            const mentorFilter = document.getElementById("mentorFilter");
+            mentorFilter.innerHTML = '<option value="all">All Mentors</option>';
+
+            mentors.forEach(m => {
+                let opt = document.createElement("option");
+                opt.value = m;
+                opt.innerText = m;
+                mentorFilter.appendChild(opt);
+            });
+
+            // Dynamically Populate Weeks based on CSV headers
+            const availableWeeks = Object.keys(COL_MAP.WEEKS).map(Number).sort((a, b) => a - b);
+            const weekFilter = document.getElementById("weekFilter");
+            weekFilter.innerHTML = '';
+
+            if (availableWeeks.length === 0) {
+                weekFilter.innerHTML = '<option value="">No Weeks Found</option>';
+            } else {
+                availableWeeks.forEach(w => {
+                    let opt = document.createElement("option");
+                    opt.value = w;
+                    opt.innerText = `Week ${String(w).padStart(2, '0')}`;
+                    weekFilter.appendChild(opt);
+                });
+            }
+        }
+
+        function renderDashboard() {
+            if (rawData.length === 0) return;
+
+            const selectedMentor = document.getElementById("mentorFilter").value;
+            const selectedWeek = document.getElementById("weekFilter").value;
+            const weekMap = COL_MAP.WEEKS[selectedWeek];
+
+            if (!weekMap) {
+                document.getElementById("dashboardBody").innerHTML = `<tr><td colspan="7" class="text-center py-10 text-rose-500 font-medium">Data for Week ${selectedWeek} is not available in the sheet.</td></tr>`;
+                return;
+            }
+
+            let filteredData = rawData;
+            if (selectedMentor !== "all") {
+                filteredData = rawData.filter(row => row[COL_MAP.SIP_MENTOR] === selectedMentor);
+            }
+
+            const tbody = document.getElementById("dashboardBody");
+            tbody.innerHTML = "";
+
+            let stats = {
+                total: filteredData.length,
+                attended: 0,
+                missingReport: 0,
+                missingRec: 0
+            };
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-400 font-medium">No students found for this filter.</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach(row => {
+                const studentName = row[COL_MAP.STUDENT_NAME] || "N/A";
+                const company = row[COL_MAP.COMPANY] || "N/A";
+                
+                const attendedNum = safeInt(row[weekMap.ATTENDED]);
+                const wprNum = safeInt(row[weekMap.WPR]);
+                const subNum = safeInt(row[weekMap.SUBMISSION]);
+                
+                const reportLink = cleanStr(row[weekMap.REPORT_LINK]);
+                const recLink = cleanStr(row[weekMap.REC_LINK]);
+
+                // Strict stats calculation
+                if (attendedNum === 3) stats.attended++;
+                if (!reportLink) stats.missingReport++;
+                if (!recLink) stats.missingRec++;
+
+                const tr = document.createElement("tr");
+                tr.className = "fade-in";
+                
+                const renderLink = (url) => {
+                    if(!url) return `<span class="text-rose-500 font-semibold text-xs">Not Submitted</span>`;
+                    return `<a href="${url}" target="_blank" class="text-blue-600 hover:underline font-medium text-xs">View Link</a>`;
+                };
+
+                const renderMarks = (mark, max) => {
+                    let color = "text-rose-500 bg-rose-100";
+                    if(mark === max) color = "text-emerald-600 bg-emerald-100";
+                    else if(mark > 0) color = "text-amber-600 bg-amber-100";
+                    return `<span class="px-2 py-1 rounded font-bold text-xs ${color}">${mark}/${max}</span>`;
+                };
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-slate-900">${studentName}</td>
+                    <td class="px-4 py-3 text-slate-600">${company}</td>
+                    <td class="px-4 py-3 text-center">${renderMarks(attendedNum, 3)}</td>
+                    <td class="px-4 py-3 text-center">${renderMarks(wprNum, 2)}</td>
+                    <td class="px-4 py-3 text-center">${renderMarks(subNum, 1)}</td>
+                    <td class="px-4 py-3 text-center">${renderLink(reportLink)}</td>
+                    <td class="px-4 py-3 text-center">${renderLink(recLink)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("statTotal").innerText = stats.total;
+            document.getElementById("statAttended").innerText = stats.total > 0 ? Math.round((stats.attended / stats.total) * 100) + "%" : "0%";
+            document.getElementById("statMissingReport").innerText = stats.missingReport;
+            document.getElementById("statMissingRec").innerText = stats.missingRec;
+
+            // Update Matrix whenever dashboard renders
+            updateMentorMatrix();
+        }
+
+        function updateMentorMatrix() {
+            const selectedWeek = document.getElementById("weekFilter").value;
+            const weekMap = COL_MAP.WEEKS[selectedWeek];
+            if (!weekMap) return;
+
+            let mentorStats = {};
+
+            rawData.forEach(row => {
+                const mentor = row[COL_MAP.SIP_MENTOR] || "Unknown";
+                if (mentor.trim() === "*" || mentor.trim() === "") return;
+
+                if (!mentorStats[mentor]) {
+                    mentorStats[mentor] = { missing: 0, students: 0 };
+                }
+                mentorStats[mentor].students++;
+
+                let missingCount = 0;
+                const attendedNum = safeInt(row[weekMap.ATTENDED]);
+                const wprNum = safeInt(row[weekMap.WPR]);
+                const subNum = safeInt(row[weekMap.SUBMISSION]);
+                const reportLink = cleanStr(row[weekMap.REPORT_LINK]);
+                const recLink = cleanStr(row[weekMap.REC_LINK]);
+
+                // Accurate calculation of missing items
+                if (attendedNum !== 3) missingCount++;
+                if (wprNum !== 2) missingCount++;
+                if (subNum !== 1) missingCount++;
+                if (!reportLink) missingCount++;
+                if (!recLink) missingCount++;
+
+                mentorStats[mentor].missing += missingCount;
+            });
+
+            let mentorArray = Object.keys(mentorStats).map(m => ({
+                name: m,
+                missing: mentorStats[m].missing,
+                students: mentorStats[m].students
+            }));
+
+            // Sort ascending for best (fewest missing)
+            let bestMentors = [...mentorArray].sort((a, b) => a.missing - b.missing).slice(0, 5);
+            // Sort descending for worst (most missing)
+            let worstMentors = [...mentorArray].sort((a, b) => b.missing - a.missing).slice(0, 5);
+
+            const bestHtml = bestMentors.map(m => `
+                <div class="flex justify-between items-center p-2 bg-emerald-50 rounded-md border border-emerald-100">
+                    <span class="font-medium text-slate-800">${m.name}</span>
+                    <span class="text-xs font-bold text-emerald-700">${m.missing} missing (${m.students} students)</span>
+                </div>
+            `).join('');
+            
+            const worstHtml = worstMentors.map(m => `
+                <div class="flex justify-between items-center p-2 bg-rose-50 rounded-md border border-rose-100">
+                    <span class="font-medium text-slate-800">${m.name}</span>
+                    <span class="text-xs font-bold text-rose-700">${m.missing} missing (${m.students} students)</span>
+                </div>
+            `).join('');
+
+            document.getElementById("bestMentors").innerHTML = bestHtml || `<p class="text-slate-400 text-xs italic">No data available.</p>`;
+            document.getElementById("worstMentors").innerHTML = worstHtml || `<p class="text-slate-400 text-xs italic">No data available.</p>`;
+        }
+
+        document.getElementById("mentorFilter").addEventListener("change", renderDashboard);
+        document.getElementById("weekFilter").addEventListener("change", renderDashboard);
+    </script>
+</body>
+</html>
